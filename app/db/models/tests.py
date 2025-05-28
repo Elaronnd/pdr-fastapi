@@ -14,10 +14,10 @@ class Tests(Base):
     title: Mapped[str] = mapped_column(nullable=False)
     description: Mapped[str] = mapped_column(nullable=False)
 
-    questions: Mapped[list['Questions']] = relationship(back_populates='tests')
+    # questions: Mapped[list['Questions']] = relationship(back_populates='tests')
 
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
-    user: Mapped['Users'] = relationship(back_populates='users')
+    user: Mapped['Users'] = relationship(back_populates='tests')
 
     def to_dict(self):
         return {
