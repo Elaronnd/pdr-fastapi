@@ -11,7 +11,10 @@ from app.config.config import (
     DB_NAME
 )
 
-engine = create_engine(f'postgresql+psycopg2://{DB_USERNAME}:{DB_PASSWORD}@{DB_ADDRESS}:{DB_PORT}/{DB_NAME}', echo=True)
+# engine = create_engine(f'postgresql+psycopg2://{DB_USERNAME}:{DB_PASSWORD}@{DB_ADDRESS}:{DB_PORT}/{DB_NAME}', echo=True)
+
+# Потім замінемо на postgres
+engine = create_engine("sqlite:///app.db", echo=True)
 
 class Base(DeclarativeBase):
     ...

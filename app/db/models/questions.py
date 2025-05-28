@@ -12,10 +12,11 @@ class Questions(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(nullable=False)
-    answers: Mapped[list[dict[bool, str]]] = mapped_column(nullable=False)
 
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
-    user: Mapped['Users'] = relationship(back_populates='users')
+    user: Mapped['Users'] = relationship(back_populates='questions')
+
+    answers: Mapped[list["Answers"]] = relationship(back_populates="question")
 
     def to_dict(self):
         return {

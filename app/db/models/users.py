@@ -14,8 +14,8 @@ class Users(Base):
     email: Mapped[str] = mapped_column(nullable=False)
     password: Mapped[str] = mapped_column(nullable=False)
 
-    questions: Mapped[list['Questions']] = relationship(back_populates='users')
-    tests: Mapped[list['Tests']] = relationship(back_populates='users')
+    questions: Mapped[list['Questions']] = relationship(back_populates='user')
+    tests: Mapped[list['Tests']] = relationship(back_populates='user')
 
     def to_dict(self):
         return {

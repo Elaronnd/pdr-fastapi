@@ -1,6 +1,8 @@
 from yaml import safe_load
 
-with open("app/config/config.yml", "r", encoding="utf-8") as file:
+file_path = "pdr-fastapi/app/config/config.yml"
+
+with open(file_path, "r", encoding="utf-8") as file:
     config_data = safe_load(file)
 
 DB_USERNAME = config_data["db_username"]
