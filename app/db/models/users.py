@@ -28,4 +28,4 @@ class Users(Base):
         }
 
     def __repr__(self):
-        return f'Users(id={self.id}, username={self.username}, email={self.email}), password={self.password}), questions={self.questions}), tests={self.tests}'
+        return f'<Users(id={self.id}, username={self.username}, email={self.email}), password={self.password}), questions={self.questions}), tests={self.tests})>'
