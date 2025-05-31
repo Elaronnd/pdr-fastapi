@@ -16,6 +16,13 @@ class Questions(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
     user: Mapped['Users'] = relationship(back_populates='questions')
 
+    test_questions: Mapped[list['QuestionsToTests']] = relationship(back_populates='questions')
+    tests: Mapped[list['Tests']] = relationship(
+        'Tests',
+        secondary='questions_to_tests',
+        viewonly=True,
+        back_populates='questions'
+    )
     answers: Mapped[list["Answers"]] = relationship(back_populates="question")
 
     def to_dict(self):
@@ -27,4 +34,4 @@ class Questions(Base):
         }
 
     def __repr__(self):
-        return f'Questions(id={self.id}, title={self.title}, answers={self.answers}), user_id={self.user_id})'
+        return f'<Questions(id={self.id}, title={self.title}, answers={self.answers}), user_id={self.user_id})>'

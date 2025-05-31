@@ -25,4 +25,4 @@ class Answers(Base):
         }
 
     def __repr__(self):
-        return "<Answers(id={}, is_right={}, question_id={})>"
+        return f"<Answers(id={self.id}, is_right={self.is_right}, question_id={self.question_id})>"
