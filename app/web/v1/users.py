@@ -30,14 +30,19 @@ users_router = APIRouter(prefix="/users")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-@users_router.get("/profile/{user_id}")
+@users_router.get("/profile/{user_id}", response_model=UserResponse)
 async def get_user_profile(user_id: int):
     user = get_user_by_id(user_id)
 
     if not user:
         raise HTTPException(status_code=404, detail="user not found")
     
-    return user
+    return UserResponse(
+        username=user.get("username"),
+        email=user.get("email"),
+        questions=user.get("questions"),
+        tests=user.get("tests")
+    )
 
 
 @users_router.post("/register", response_model=Token)
@@ -69,7 +74,7 @@ async def login(user: Login):
     return Token(access_token=access_token, token_type="bearer")
 
 
-@users_router.get("/users/profile", response_model=UserResponse)
+@users_router.get("/profile", response_model=UserResponse)
 async def read_users_me(current_user: UserData = Depends(get_current_user)):
     return UserResponse(
         username=current_user.username,
