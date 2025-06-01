@@ -17,7 +17,7 @@ email_str_validator = Annotated[
 ]
 
 
-class Login(BaseModel):
+class LoginRequest(BaseModel):
     username: str = Field(..., min_length=1, max_length=100, title="Username", description="Your username")
     password: str = Field(..., title="Password",
                           description="Must be restricted to, though does not specifically require any of:"
@@ -29,11 +29,11 @@ class Login(BaseModel):
                           pattern=r"[A-Za-z0-9@#$%^&+=]{5,35}")
 
 
-class Register(Login):
+class RegisterRequest(LoginRequest):
     email: email_str_validator = Field(..., title="Email", description="Your email address")
 
 
-class Token(BaseModel):
+class TokenResponse(BaseModel):
     access_token: str
     token_type: str
 

@@ -18,10 +18,10 @@ from app.config.config import (
     STATUS_CODE,
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
-from app.utils.pydantic_classes import (
-    Register,
-    Token,
-    Login,
+from app.schemas.users_schema import (
+    RegisterRequest,
+    TokenResponse,
+    LoginRequest,
     UserResponse,
     UserData
 )
@@ -45,8 +45,8 @@ async def get_user_profile(user_id: int):
     )
 
 
-@users_router.post("/register", response_model=Token)
-async def create_user(user: Register):
+@users_router.post("/register", response_model=TokenResponse)
+async def create_user(user: RegisterRequest):
     password_hash = pwd_context.hash(user.password.lower())
     try:
         register_user(username=user.username.lower(), password=password_hash, email=user.email)
@@ -57,11 +57,11 @@ async def create_user(user: Register):
     access_token = await create_access_token(
         data={"sub": user.username.lower()}, expires_delta=access_token_expires
     )
-    return Token(access_token=access_token, token_type="bearer")
+    return TokenResponse(access_token=access_token, token_type="bearer")
 
 
-@users_router.post("/login", response_model=Token)
-async def login(user: Login):
+@users_router.post("/login", response_model=TokenResponse)
+async def login(user: LoginRequest):
     try:
         user_password = get_password_by_username(username=user.username.lower())
     except ValueError as error:
@@ -71,7 +71,7 @@ async def login(user: Login):
         raise HTTPException(status_code=400, detail='Invalid password')
 
     access_token = await create_access_token(data={"sub": user.username.lower()})
-    return Token(access_token=access_token, token_type="bearer")
+    return TokenResponse(access_token=access_token, token_type="bearer")
 
 
 @users_router.get("/profile", response_model=UserResponse)

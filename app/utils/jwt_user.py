@@ -1,7 +1,7 @@
 from jwt.exceptions import InvalidTokenError
 from typing import Union
 from app.db.queries.users import get_user_by_username
-from app.utils.pydantic_classes import UserData
+from app.schemas.users_schema import UserData
 from jwt.api_jwt import (
     decode,
     encode
