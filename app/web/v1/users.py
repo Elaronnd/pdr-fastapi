@@ -26,7 +26,7 @@ from app.utils.pydantic_classes import (
     UserData
 )
 
-users_router = APIRouter(prefix="/users")
+users_router = APIRouter(prefix="/users", tags=["Користувачі 👤"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 

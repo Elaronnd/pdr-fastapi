@@ -1,9 +1,9 @@
-from typing import Annotated
+from typing import Annotated, Optional
 from pydantic import (
     BaseModel,
     Field,
     EmailStr,
-    BeforeValidator
+    BeforeValidator,
 )
 
 
@@ -47,3 +47,36 @@ class UserResponse(BaseModel):
 
 class UserData(UserResponse):
     password: str = Field(..., title="Password", description="Your password in hash")
+
+class QuestionCreate(BaseModel):
+    title: str = Field(..., title="Title", min_length=1, max_length=100, description="Title of the question")
+    user_id: int = Field(..., title="User ID", description="ID of the user who created the question")
+
+class AnswerResponse(BaseModel):
+    id: int
+    is_right: bool = Field(..., title="Is Right", description="Indicates if the answer is correct")
+    question_id: int = Field(..., title="Question ID", description="ID of the question this answer belongs to")
+
+
+class TestResponse(BaseModel):
+    id: int
+    title: str = Field(..., title="Title", min_length=1, max_length=100, description="Title of the test")
+    description: str = Field(..., title="Description", min_length=1, max_length=500, description="Description of the test")
+
+
+class QuestionResponse(BaseModel):
+    id: int
+    title: str = Field(..., title="Title", min_length=1, max_length=100, description="Title of the qustion")
+    user_id: int = Field(..., title="User ID", description="ID of the user who created the question")
+
+    answers: Optional[list[AnswerResponse]] = Field(
+        default_factory=list,
+        title="Answers",
+        description="List of answers to the question"
+    )
+
+    tests: Optional[list[TestResponse]] = Field(
+        default_factory=list,
+        title="Tests",
+        description="List of tests that contain this question"
+    )
