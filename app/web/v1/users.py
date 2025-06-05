@@ -18,7 +18,7 @@ from app.config.config import (
     STATUS_CODE,
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
-from app.utils.pydantic_classes import (
+from app.schemas.pydantic_users import (
     Register,
     Token,
     Login,
@@ -26,7 +26,7 @@ from app.utils.pydantic_classes import (
     UserData
 )
 
-users_router = APIRouter(prefix="/users", tags=["Користувачі 👤"])
+users_router = APIRouter(prefix="/users", tags=["Users"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 

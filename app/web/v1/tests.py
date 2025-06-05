@@ -2,23 +2,25 @@ from fastapi import (
     APIRouter,
     HTTPException
 )
-
+from app.schemas.pydantic_tests import TestResponse
 from app.db.queries import (
     get_test_by_id
 )
 
 tests_router = APIRouter(prefix="/tests",
-                        tags=["Тести 📜"])
+                        tags=["Tests"])
 
-@tests_router.get("/{test_id}")
+@tests_router.get("/{test_id}", response_model=TestResponse)
 async def get_test(test_id: int):
-    
     test = get_test_by_id(test_id)
 
     if not test:
         raise HTTPException(status_code=404, detail="Test not found")
-    
-    return test
 
-
-
+    return TestResponse(
+        id=test.get("id"),
+        title=test.get("title"),
+        description=test.get("description"),
+        questions=test.get("questions"),
+        user_id=test.get("user_id")
+    )

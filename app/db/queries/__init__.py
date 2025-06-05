@@ -1,5 +1,9 @@
 from app.db.queries.users import (
-    get_user_by_id
+    get_user_by_id,
+    is_email_in_db,
+    register_user,
+    get_user_by_username,
+    get_password_by_username
 )
 
 from app.db.queries.tests import (
@@ -7,7 +11,7 @@ from app.db.queries.tests import (
 )
 
 from app.db.queries.questions import (
-    create_question,
+    create_question_with_answers,
     delete_question,
     get_all_questions,
     get_question_by_id

@@ -12,7 +12,7 @@ class Tests(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(nullable=False)
-    description: Mapped[str] = mapped_column(nullable=False)
+    description: Mapped[str] = mapped_column(nullable=True)
 
     test_questions: Mapped[list['QuestionsToTests']] = relationship(back_populates='tests')
     questions: Mapped[list['Questions']] = relationship(

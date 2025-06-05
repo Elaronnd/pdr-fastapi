@@ -21,5 +21,7 @@ STATUS_CODE = {
     "invalid category_id": 400,
     "unknown product_id": 404,
     "product not found": 404,
+    "question not found": 404,
+    "questions not found": 404,
     "you do not have permission to perform this action": 403
 }
