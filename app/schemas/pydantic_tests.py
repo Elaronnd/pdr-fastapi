@@ -7,7 +7,7 @@ from pydantic import (
 
 
 class TestResponse(BaseModel):
-    id: int
+    id: int = Field(..., title="Id", description="Id of test")
     title: str = Field(..., title="Title", min_length=1, max_length=100, description="Title of the test")
     description: Optional[str] = Field(..., title="Description", min_length=1, max_length=500, description="Description of the test")
     questions: list[QuestionResponse] = Field(

@@ -35,12 +35,12 @@ class QuestionCreate(BaseModel):
 
 
 class AnswerResponse(AnswerCreate):
-    id: int
+    id: int = Field(..., title="Id", description="Id of answer")
     question_id: int = Field(..., title="Question ID", description="ID of the question this answer belongs to")
 
 
 class QuestionResponse(BaseModel):
-    id: int
+    id: int = Field(..., title="Id", description="Id of question")
     title: str = Field(..., title="Title", min_length=1, max_length=100, description="Title of the question")
     user_id: int = Field(..., title="User ID", description="ID of the user who created the question")
 

@@ -58,7 +58,7 @@ async def get_current_user(token: HTTPAuthorizationCredentials = Security(securi
     except ValueError as error:
         raise HTTPException(status_code=STATUS_CODE.get(str(error).lower()), detail=str(error))
     return UserData(
-        user_id=user.get("id"),
+        id=user.get("id"),
         username=user.get("username"),
         email=user.get("email"),
         password=user.get("password"),

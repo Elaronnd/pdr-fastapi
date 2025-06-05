@@ -46,4 +46,5 @@ class UserResponse(BaseModel):
 
 
 class UserData(UserResponse):
+    id: int = Field(..., title="Id", description="Id of user")
     password: str = Field(..., title="Password", description="Your password in hash")
