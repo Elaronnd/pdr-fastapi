@@ -1,7 +1,7 @@
 from jwt.exceptions import InvalidTokenError
 from typing import Union
 from app.db.queries.users import get_user_by_username
-from app.utils.pydantic_classes import UserData
+from app.schemas.pydantic_users import UserData
 from jwt.api_jwt import (
     decode,
     encode
@@ -58,6 +58,7 @@ async def get_current_user(token: HTTPAuthorizationCredentials = Security(securi
     except ValueError as error:
         raise HTTPException(status_code=STATUS_CODE.get(str(error).lower()), detail=str(error))
     return UserData(
+        id=user.get("id"),
         username=user.get("username"),
         email=user.get("email"),
         password=user.get("password"),

@@ -1,6 +1,6 @@
 from app.db.base import Session
 from app.db.models import Users
-from app.utils.pydantic_classes import email_str_validator
+from app.schemas.pydantic_users import email_str_validator
 
 
 def get_user_by_id(user_id: int):
