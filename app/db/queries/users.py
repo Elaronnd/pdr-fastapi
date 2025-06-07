@@ -3,14 +3,14 @@ from app.db.models import Users
 from app.schemas.pydantic_users import email_str_validator
 
 
-def get_user_by_id(user_id: int):
+def get_user_by_id(user_id: int, xss_secure: bool = True):
     with Session() as session:
         user = session.query(Users).filter_by(id = user_id).one_or_none()
 
         if user is None:
             return None
         
-        return user.to_dict()
+        return user.to_dict(xss_secure=xss_secure)
 
 
 def is_email_in_db(email: email_str_validator) -> bool:
@@ -36,21 +36,11 @@ def register_user(username: str, password: str, email: email_str_validator) -> N
         session.commit()
 
 
-def get_user_by_username(username: str) -> Users.to_dict:
+def get_user_by_username(username: str, xss_secure: bool = True) -> Users.to_dict:
     with Session() as session:
         user = session.query(Users).filter_by(username=username.lower()).one_or_none()
 
         if not user:
             raise ValueError('User not found')
 
-        return user.to_dict()
-
-
-def get_password_by_username(username: str) -> Users.password:
-    with Session() as session:
-        user = session.query(Users).filter_by(username=username.lower()).one_or_none()
-
-        if not user:
-            raise ValueError('User not found')
-
-        return user.password
+        return user.to_dict(xss_secure=xss_secure)

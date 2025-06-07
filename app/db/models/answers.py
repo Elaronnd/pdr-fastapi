@@ -1,5 +1,5 @@
 from app.db.base import Base
-
+from html import escape
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
@@ -18,13 +18,20 @@ class Answers(Base):
     question_id: Mapped[int] = mapped_column(ForeignKey("questions.id"), nullable=False)
     question: Mapped["Questions"] = relationship(back_populates="answers")
 
-    def to_dict(self):
+    def to_dict(self, xss_secure: bool = True):
         return {
             "id": self.id,
-            "title": self.title,
-            "is_right": self.is_right,
-            "question_id": self.question_id,
+            "title": self.title if xss_secure is False else escape(self.title) ,
+            "is_right": self.is_right if xss_secure is False else escape(self.is_right),
+            "question_id": self.question_id if xss_secure is False else escape(self.question_id),
         }
 
-    def __repr__(self):
-        return f"<Answers(id={self.id}, title={self.title}, is_right={self.is_right}, question_id={self.question_id})>"
+    def __repr__(self, xss_secure: bool = True):
+        return (
+            f"<Answers("
+            f"id={self.id}, "
+            f"title={self.title if xss_secure is False else escape(self.title)}, "
+            f"is_right={self.is_right if xss_secure is False else escape(self.is_right)}, "
+            f"question_id={self.question_id if xss_secure is False else escape(self.question_id)}"
+            ")>"
+        )

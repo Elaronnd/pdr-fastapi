@@ -2,8 +2,7 @@ from app.db.queries.users import (
     get_user_by_id,
     is_email_in_db,
     register_user,
-    get_user_by_username,
-    get_password_by_username
+    get_user_by_username
 )
 
 from app.db.queries.tests import (

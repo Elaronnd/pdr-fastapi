@@ -1,4 +1,3 @@
-from __future__ import annotations
 from typing import Optional
 from pydantic import (
     BaseModel,
@@ -44,18 +43,14 @@ class QuestionResponse(BaseModel):
     title: str = Field(..., title="Title", min_length=1, max_length=100, description="Title of the question")
     user_id: int = Field(..., title="User ID", description="ID of the user who created the question")
 
-    answers: list[AnswerResponse] = Field(
+    answers_count: int = Field(
         ...,
         title="Answers",
-        description="List of answers to the question",
+        description="Count of answers that contain this question",
     )
 
-    tests: Optional[list[TestResponse]] = Field(
-        default_factory=list,
+    tests_count: Optional[int] = Field(
+        default=None,
         title="Tests",
-        description="List of tests that contain this question"
+        description="Count of tests that contain this question"
     )
-
-from app.schemas.pydantic_tests import TestResponse
-
-QuestionResponse.model_rebuild()

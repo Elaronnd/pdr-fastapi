@@ -11,8 +11,8 @@ tests_router = APIRouter(prefix="/tests",
                         tags=["Tests"])
 
 @tests_router.get("/{test_id}", response_model=TestResponse)
-async def get_test(test_id: int):
-    test = get_test_by_id(test_id)
+async def get_test(test_id: int, xss_secure: bool = True):
+    test = get_test_by_id(test_id=test_id, xss_secure=xss_secure)
 
     if not test:
         raise HTTPException(status_code=404, detail="Test not found")
