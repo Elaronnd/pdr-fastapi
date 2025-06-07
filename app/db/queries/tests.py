@@ -6,11 +6,11 @@ from app.db.models import (
     Tests
 )
 
-def get_test_by_id(test_id: int):
+def get_test_by_id(test_id: int, xss_secure: bool = True):
     with Session() as session:
         test = session.query(Tests).filter_by(id=test_id).one_or_none()
 
         if not test:
             return None
         
-        return test.to_dict()
+        return test.to_dict(xss_secure=xss_secure)

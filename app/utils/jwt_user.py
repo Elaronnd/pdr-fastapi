@@ -54,7 +54,7 @@ async def get_current_user(token: HTTPAuthorizationCredentials = Security(securi
     except InvalidTokenError:
         raise credentials_exception
     try:
-        user = get_user_by_username(username=username)
+        user = get_user_by_username(username=username, xss_secure=False)
     except ValueError as error:
         raise HTTPException(status_code=STATUS_CODE.get(str(error).lower()), detail=str(error))
     return UserData(

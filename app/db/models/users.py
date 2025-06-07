@@ -1,3 +1,4 @@
+from html import escape
 from app.db.base import Base
 from sqlalchemy.orm import (
     Mapped,
@@ -17,15 +18,24 @@ class Users(Base):
     questions: Mapped[list['Questions']] = relationship(back_populates='user')
     tests: Mapped[list['Tests']] = relationship(back_populates='user')
 
-    def to_dict(self):
+    def to_dict(self, xss_secure: bool = True):
         return {
             'id': self.id,
-            'username': self.username,
-            'email': self.email,
+            'username': self.username if xss_secure is False else escape(self.username),
+            'email': self.email if xss_secure is False else escape(self.email),
             'password': self.password,
-            'questions': [question.to_dict() for question in self.questions],
-            'tests': [test.to_dict() for test in self.tests]
+            'questions': [question.to_dict(xss_secure=xss_secure) for question in self.questions],
+            'tests': [test.to_dict(xss_secure=xss_secure) for test in self.tests]
         }
 
     def __repr__(self):
-        return f'<Users(id={self.id}, username={self.username}, email={self.email}), password={self.password}), questions={self.questions}), tests={self.tests})>'
+        return (
+            f'<Users('
+            f'id={self.id}, '
+            f'username={self.username}, '
+            f'email={self.email}), '
+            f'password={self.password}), '
+            f'questions={self.questions}), '
+            f'tests={self.tests}'
+            f')>'
+        )
