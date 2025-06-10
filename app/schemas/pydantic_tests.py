@@ -1,5 +1,5 @@
-from __future__ import annotations
 from typing import Optional
+from app.schemas.pydantic_questions import QuestionResponse
 from pydantic import (
     BaseModel,
     Field
@@ -16,8 +16,3 @@ class TestResponse(BaseModel):
         description="List of questions"
     )
     user_id: int = Field(..., title="User ID", description="ID of the user who created the question")
-
-
-from app.schemas.pydantic_questions import QuestionResponse
-
-TestResponse.model_rebuild()

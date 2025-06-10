@@ -8,7 +8,7 @@ from fastapi import (
 )
 from app.db.queries.users import (
     register_user,
-    get_password_by_username
+    get_user_by_username
 )
 from app.utils.jwt_user import (
     create_access_token,
@@ -25,14 +25,18 @@ from app.schemas.pydantic_users import (
     UserResponse,
     UserData
 )
+from html import escape
 
 users_router = APIRouter(prefix="/users", tags=["Users"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 @users_router.get("/profile/{user_id}", response_model=UserResponse)
-async def get_user_profile(user_id: int):
-    user = get_user_by_id(user_id)
+async def get_user_profile(
+    user_id: int,
+    xss_secure: bool = True
+):
+    user = get_user_by_id(user_id, xss_secure=xss_secure)
 
     if not user:
         raise HTTPException(status_code=404, detail="user not found")
@@ -63,7 +67,7 @@ async def create_user(user: Register):
 @users_router.post("/login", response_model=Token)
 async def login(user: Login):
     try:
-        user_password = get_password_by_username(username=user.username.lower())
+        user_password = get_user_by_username(username=user.username.lower()).get("password")
     except ValueError as error:
         raise HTTPException(status_code=STATUS_CODE.get(str(error).lower()), detail=str(error))
 
@@ -75,10 +79,13 @@ async def login(user: Login):
 
 
 @users_router.get("/profile", response_model=UserResponse)
-async def read_users_me(current_user: UserData = Depends(get_current_user)):
+async def read_users_me(
+    current_user: UserData = Depends(get_current_user),
+    xss_secure: bool = True
+):
     return UserResponse(
-        username=current_user.username,
-        email=current_user.email,
+        username=current_user.username if xss_secure is False else escape(current_user.username),
+        email=current_user.email if xss_secure is False else escape(current_user.email),
         questions=current_user.questions,
         tests=current_user.tests
     )

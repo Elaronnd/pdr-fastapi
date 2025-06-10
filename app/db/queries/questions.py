@@ -11,7 +11,7 @@ from app.db.models import (
 )
 
 
-def create_question_with_answers(title: str, user_id: int, answers: list, description: Optional[str] = None):
+def create_question_with_answers(title: str, user_id: int, answers: list, description: Optional[str] = None, xss_secure: bool = True):
     with Session() as session:
         user = session.query(Users).filter_by(id=user_id).one_or_none()
 
@@ -33,7 +33,7 @@ def create_question_with_answers(title: str, user_id: int, answers: list, descri
         session.commit()
         session.refresh(question)
 
-        return question.to_dict()
+        return question.to_dict(xss_secure=xss_secure)
 
 
 def delete_question(question_id: int):
@@ -47,21 +47,21 @@ def delete_question(question_id: int):
         session.commit()
 
 
-def get_all_questions():
+def get_all_questions(xss_secure: bool = True):
     with Session() as session:
         questions = session.query(Questions).all()
 
         if not questions:
             raise ValueError("questions not found")
 
-        return [question.to_dict() for question in questions]
+        return [question.to_dict(xss_secure=xss_secure) for question in questions]
 
 
-def get_question_by_id(question_id: int):
+def get_question_by_id(question_id: int, xss_secure: bool = True):
     with Session() as session:
         question = session.query(Questions).filter_by(id=question_id).one_or_none()
 
         if not question:
             raise ValueError("question not found")
 
-        return question.to_dict()
+        return question.to_dict(xss_secure=xss_secure)

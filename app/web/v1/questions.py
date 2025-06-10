@@ -21,7 +21,8 @@ questions_router = APIRouter(prefix="/questions", tags=["Questions"])
 @questions_router.post("/", response_model=QuestionResponse)
 async def add_question(
     question: QuestionCreate,
-    current_user: UserData = Depends(get_current_user)
+    current_user: UserData = Depends(get_current_user),
+    xss_secure: bool = True
 ):
     right_answers = 0
     for answer in question.answers:
@@ -33,12 +34,18 @@ async def add_question(
             detail="There must be exactly one correct answer"
         )
     try:
-        created_question = create_question_with_answers(title=question.title, description=question.description, user_id=current_user.user_id, answers=question.answers)
+        created_question = create_question_with_answers(
+            title=question.title,
+            description=question.description,
+            user_id=current_user.id,
+            answers=question.answers,
+            xss_secure=xss_secure
+        )
         return QuestionResponse(
             id=created_question.get("id"),
             title=created_question.get("title"),
             user_id=created_question.get("user_id"),
-            answers=created_question.get("answers"),
+            answers_count=created_question.get("answers_count"),
         )
     except ValueError as error:
         raise HTTPException(status_code=STATUS_CODE.get(str(error).lower()), detail=str(error))
@@ -61,18 +68,18 @@ async def delete_question_api(
 
 
 @questions_router.get("/", response_model=list[QuestionResponse])
-async def get_all_questions_api():
+async def get_all_questions_api(xss_secure: bool = True):
     questions_list = []
     try:
-        questions = get_all_questions()
+        questions = get_all_questions(xss_secure=xss_secure)
         for question in questions:
             questions_list.append(
                 QuestionResponse(
-                    id=question.id,
-                    title=question.title,
-                    user_id=question.user_id,
-                    answers=question.answers,
-                    tests=question.tests
+                    id=question.get("id"),
+                    title=question.get("title"),
+                    user_id=question.get("user_id"),
+                    answers_count=question.get("answers_count"),
+                    tests_count=question.get("test_count")
                 )
             )
         return questions_list
@@ -81,15 +88,15 @@ async def get_all_questions_api():
 
 
 @questions_router.get("/{question_id}", response_model=QuestionResponse)
-async def get_question_by_id_api(question_id: int):
+async def get_question_by_id_api(question_id: int, xss_secure: bool = True):
     try:
-        question = get_question_by_id(question_id=question_id)
+        question = get_question_by_id(question_id=question_id, xss_secure=xss_secure)
         return QuestionResponse(
             id=question.get("id"),
             title=question.get("title"),
             user_id=question.get("user_id"),
-            answers=question.get("answers"),
-            tests=question.get("test_questions")
+            answers_count=question.get("answers_count"),
+            tests_count=question.get("test_count")
         )
     except ValueError as error:
         raise HTTPException(status_code=STATUS_CODE.get(str(error).lower()), detail=str(error))

@@ -1,3 +1,4 @@
+from html import escape
 from sqlalchemy import ForeignKey
 from app.db.base import Base
 from sqlalchemy.orm import (
@@ -27,15 +28,24 @@ class Questions(Base):
     )
     answers: Mapped[list["Answers"]] = relationship(back_populates="question", cascade="all, save-update, delete, delete-orphan")
 
-    def to_dict(self):
+    def to_dict(self, xss_secure: bool = True):
         return {
             'id': self.id,
-            'title': self.title,
-            'description': self.description,
+            'title': escape(self.title) if xss_secure else self.title,
+            'description': escape(self.description) if xss_secure else self.description,
             'user_id': self.user_id,
-            'answers': [answer.to_dict() for answer in self.answers],
-            'test_questions': [test_question.to_dict() for test_question in self.test_questions]
+            'answers_count': len(self.answers),
+            'test_count': len(self.test_questions)
         }
 
     def __repr__(self):
-        return f'<Questions(id={self.id}, title={self.title}, description={self.description}, answers={self.answers}), user_id={self.user_id}, test_questions={self.test_questions})>'
+        return (
+            f'<Questions('
+            f'id={self.id}, '
+            f'title={escape(self.title)}, '
+            f'description={escape(self.description)}, '
+            f'answers_count={len(self.answers)}, '
+            f'user_id={self.user_id}, '
+            f'test_count={len(self.test_questions)}'
+            ')>'
+        )

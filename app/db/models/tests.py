@@ -1,3 +1,4 @@
+from html import escape
 from sqlalchemy import ForeignKey
 from app.db.base import Base
 from sqlalchemy.orm import (
@@ -25,14 +26,21 @@ class Tests(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
     user: Mapped['Users'] = relationship(back_populates='tests')
 
-    def to_dict(self):
+    def to_dict(self, xss_secure: bool = True):
         return {
             'id': self.id,
-            'title': self.title,
-            'description': self.description,
-            'questions': [question.to_dict() for question in self.questions],
+            'title': escape(self.title) if xss_secure else self.title,
+            'description': escape(self.description) if xss_secure else self.description,
+            'questions': [question.to_dict(xss_secure=xss_secure) for question in self.questions],
             'user_id': self.user_id,
         }
 
     def __repr__(self):
-        return f'<Tests(id={self.id}, title={self.title}, description={self.description}), questions={self.questions}, user_id={self.user_id})>'
+        return (
+            f'<Tests('
+            f'id={self.id}, '
+            f'title={self.title}, '
+            f'description={self.description}), '
+            f'questions={self.questions}, '
+            f'user_id={self.user_id})>'
+        )
