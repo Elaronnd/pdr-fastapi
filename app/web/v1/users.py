@@ -10,7 +10,7 @@ from app.db.queries.users import (
     register_user,
     get_user_by_username
 )
-from app.utils.jwt_user import (
+from app.jwt.users import (
     create_access_token,
     get_current_user
 )
@@ -34,7 +34,7 @@ async def get_user_profile(
     user_id: int,
     xss_secure: bool = True
 ):
-    user = get_user_by_id(user_id, xss_secure=xss_secure)
+    user = await get_user_by_id(user_id, xss_secure=xss_secure)
 
     if not user:
         raise UserIdError(status_code=404, message="user not found", user_id=user_id)
@@ -51,7 +51,7 @@ async def get_user_profile(
 @users_router.post("/register", response_model=Token)
 async def create_user(user: Register):
     password_hash = pwd_context.hash(user.password.lower())
-    register_user(username=user.username.lower(), password=password_hash, email=user.email, is_admin=False)
+    await register_user(username=user.username.lower(), password=password_hash, email=user.email, is_admin=False)
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = await create_access_token(
@@ -62,7 +62,8 @@ async def create_user(user: Register):
 
 @users_router.post("/login", response_model=Token)
 async def login(user: Login):
-    user_password = get_user_by_username(username=user.username.lower()).get("password")
+    user_password = await get_user_by_username(username=user.username.lower())
+    user_password = user_password.get("password")
 
     if not pwd_context.verify(user.password.lower(), user_password):
         raise UsernameError(status_code=400, message='Invalid password', username=user.username)

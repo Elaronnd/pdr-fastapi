@@ -18,6 +18,7 @@ class Users(Base):
 
     questions: Mapped[list['Questions']] = relationship(back_populates='user')
     tests: Mapped[list['Tests']] = relationship(back_populates='user')
+    answers: Mapped[list['Answers']] = relationship(back_populates='user')
 
     def to_dict(self, xss_secure: bool = True):
         return {

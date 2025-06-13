@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, Response
 from app.db.check_status import CheckStatus
 from app.db.queries.users import get_user_by_username
 from app.exceptions import QuestionError
+from app.schemas.pydantic_answers import AnswerInQuestionResponse, FullAnswerInQuestionResponse
 from app.schemas.pydantic_questions import (
     QuestionCreate,
     QuestionResponse,
@@ -14,7 +15,8 @@ from app.db.queries import (
     get_question_by_id
 )
 from app.schemas.pydantic_users import UserData
-from app.utils.jwt_user import get_current_user
+from app.jwt.users import get_current_user
+from app.cloud.r2_cloudflare import r2_client
 
 questions_router = APIRouter(prefix="/questions", tags=["Questions"])
 
@@ -36,7 +38,7 @@ async def add_question(
             status_code=413,
             detail="There must be exactly one correct answer"
         )
-    created_question = create_question_with_answers(
+    created_question = await create_question_with_answers(
         title=question.title,
         description=question.description,
         user_id=current_user.id,
@@ -48,7 +50,13 @@ async def add_question(
         id=created_question["id"],
         title=created_question["title"],
         user_id=created_question["user_id"],
-        answers=created_question["answers"],
+        answers=[
+            AnswerInQuestionResponse(
+                id=answer["id"],
+                title=answer["title"],
+                is_right=answer["is_right"]
+            ) for answer in created_question["answers"]
+        ],
     )
 
 
@@ -59,11 +67,11 @@ async def delete_question_api(
 ):
     if current_user is None:
         raise HTTPException(status_code=403, detail="Not authenticated")
-    user_data = get_user_by_username(username=current_user.username)
+    user_data = await get_user_by_username(username=current_user.username)
     user_questions = user_data.get("questions", [])
 
     if any(question.get("id") == question_id for question in user_questions) or current_user.is_admin is True:
-        delete_question(question_id=question_id)
+        await delete_question(question_id=question_id)
         return Response(status_code=204)
 
     raise HTTPException(status_code=403, detail="You don't have permission to delete this question")
@@ -74,13 +82,19 @@ async def get_all_questions_api(
         xss_secure: bool = True,
         current_user: UserData = Depends(get_current_user)
 ):
-    questions = get_all_questions(xss_secure=xss_secure, status=None if current_user.is_admin is True else CheckStatus.APPROVED)
+    questions = await get_all_questions(xss_secure=xss_secure, status=None if current_user.is_admin is True else CheckStatus.APPROVED)
     return [
         QuestionResponse(
             id=question["id"],
             title=question["title"],
             user_id=question["user_id"],
-            answers=question["answers"],
+            answers=[
+                AnswerInQuestionResponse(
+                    id=answer["id"],
+                    title=answer["title"],
+                    is_right=answer["is_right"]
+                ) for answer in question["answers"]
+            ],
             tests_count=question["test_count"]
         )
         for question in questions
@@ -89,14 +103,21 @@ async def get_all_questions_api(
 
 @questions_router.get("/{question_id}", response_model=FullQuestionResponse)
 async def get_question_by_id_api(question_id: int, xss_secure: bool = True, current_user: UserData = Depends(get_current_user)):
-    question = get_question_by_id(question_id=question_id, xss_secure=xss_secure)
+    question = await get_question_by_id(question_id=question_id, xss_secure=xss_secure)
     if question.get("status") != CheckStatus.APPROVED and (current_user is None or question.get("user_id") != current_user.id and current_user.is_admin is False):
         raise QuestionError(status_code=423, message="Question awaiting review", question_id=question_id)
     return FullQuestionResponse(
         id=question["id"],
         title=question["title"],
         user_id=question["user_id"],
-        answers=question["answers"],
+        answers=[
+            FullAnswerInQuestionResponse(
+                id=answer["id"],
+                title=answer["title"],
+                is_right=answer["is_right"],
+                image_url=None if answer["filename"] is None else r2_client.generate_image_url(filename=answer["filename"])
+            ) for answer in question["answers"]
+        ],
         tests_count=question["test_count"],
         status=question["status"]
     )

@@ -7,7 +7,7 @@ from app.db.queries import (
     edit_status_question
 )
 from app.schemas.pydantic_users import UserData
-from app.utils.jwt_user import get_current_user
+from app.jwt.users import get_current_user
 
 admin_router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -23,7 +23,7 @@ async def change_status_question(
         raise HTTPException(status_code=403, detail="Not authenticated")
     elif current_user.is_admin is False:
         raise HTTPException(status_code=403, detail="You are not admin")
-    question = edit_status_question(
+    question = await edit_status_question(
         question_id=question_id,
         status=status,
         xss_secure=xss_secure
