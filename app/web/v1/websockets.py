@@ -1,54 +1,83 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from typing import Set
-
-from app.schemas.pydantic_users import (
-    UserData
+from fastapi import (
+    APIRouter,
+    WebSocket,
+    WebSocketDisconnect,
+    Depends
 )
-
-from app.db.queries import (
-    get_user_by_id
-)
+from app.config.config import FORBIDDEN_TAGS
+from app.schemas.pydantic_users import UserData
+from app.utils.jwt_user import get_current_user_ws
+from html import escape
 
 websocket_router = APIRouter(prefix="/ws")
 
-active_users: Set[WebSocket] = set()
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def send_personal_message(self, message: dict[str, str], websocket: WebSocket):
+        await websocket.send_json(message)
+
+    async def broadcast(self, message: dict[str, str]):
+        for connection in self.active_connections:
+            await connection.send_json(message)
+
+manager = ConnectionManager()
 
 @websocket_router.websocket("/chat")
-async def chat_websocket(websocket: WebSocket):
-    await websocket.accept()
+async def chat_websocket(
+        websocket: WebSocket,
+        token: UserData = Depends(get_current_user_ws)
+):
+    await manager.connect(websocket)
 
-    id = websocket.query_params["id"]
-
-    if not id:
-        await websocket.close(code=1008, reason="User ID not provided")
-        raise ValueError("User ID not provided")
-
-    user = get_user_by_id(id)
-
-    if not user:
-        await websocket.close(code=1008, reason="User not found")
-        raise ValueError("User not found")
-    
-    name = user["username"]
-    active_users.add(websocket)
-    
     try:
         while True:
-            data = await websocket.receive_text()
+            message = await websocket.receive_text()
+            message = escape(message)
 
-            for user in active_users.copy(): 
-                if websocket != user:
-                    try:
-                        await user.send_text(f"{name}: {data}")
-                    except:
-                        active_users.discard(user)
+            if len(message) > 1000:
+                await manager.send_personal_message(
+                    message={
+                        "name": "Chat",
+                        "tag": "System",
+                        "message": "Too big text"
+                    },
+                    websocket=websocket
+                )
+                continue
 
+            elif any(tag.lower() in message.lower() for tag in FORBIDDEN_TAGS):
+                await manager.send_personal_message(
+                    message={
+                        "name": "Chat",
+                        "tag": "System",
+                        "message": "Please, don't try to scam"
+                    },
+                    websocket=websocket
+                )
+                continue
+
+            await manager.broadcast(
+                message={
+                    "name": token.username,
+                    "tag": "(Admin)" if token.is_admin is True else "(User)",
+                    "message": message
+                }
+            )
     except WebSocketDisconnect:
-        pass
-
-    except Exception as e:
-        print(f"WebSocket error: {e}")
-
-    finally:
-        await websocket.close()
-        active_users.discard(websocket)
+        manager.disconnect(websocket)
+        await manager.broadcast(
+            message={
+                "name": "Chat",
+                "tag": "System",
+                "message": f"User '{token.username}' left the chat"
+            }
+        )
