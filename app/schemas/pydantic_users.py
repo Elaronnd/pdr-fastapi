@@ -45,6 +45,11 @@ class UserResponse(BaseModel):
     tests: list = Field(..., title="Tests", description="List of Tests")
 
 
+class FullUserResponse(UserResponse):
+    is_admin: bool = Field(..., title="Is admin?", description="Is admin this user?")
+
+
 class UserData(UserResponse):
     id: int = Field(..., title="Id", description="Id of user")
     password: str = Field(..., title="Password", description="Your password in hash")
+    is_admin: bool = Field(..., title="Is admin?", description="Is admin in bool")

@@ -1,5 +1,6 @@
 from html import escape
-from sqlalchemy import ForeignKey
+from app.db.check_status import CheckStatus
+from sqlalchemy import ForeignKey, Enum
 from app.db.base import Base
 from sqlalchemy.orm import (
     Mapped,
@@ -14,6 +15,7 @@ class Questions(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(nullable=False)
     description: Mapped[str] = mapped_column(nullable=True)
+    status: Mapped[CheckStatus] = mapped_column(Enum(CheckStatus), nullable=False, default=CheckStatus.PENDING)
 
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
     user: Mapped['Users'] = relationship(back_populates='questions')
@@ -34,7 +36,8 @@ class Questions(Base):
             'title': escape(self.title) if xss_secure else self.title,
             'description': escape(self.description) if xss_secure else self.description,
             'user_id': self.user_id,
-            'answers_count': len(self.answers),
+            'status': self.status,
+            'answers': [answer.to_dict(xss_secure=xss_secure) for answer in self.answers],
             'test_count': len(self.test_questions)
         }
 
@@ -44,8 +47,9 @@ class Questions(Base):
             f'id={self.id}, '
             f'title={escape(self.title)}, '
             f'description={escape(self.description)}, '
-            f'answers_count={len(self.answers)}, '
+            f'answers={self.answers}, '
             f'user_id={self.user_id}, '
+            f'status={self.status}, '
             f'test_count={len(self.test_questions)}'
             ')>'
         )

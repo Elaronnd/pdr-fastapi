@@ -14,15 +14,13 @@ from app.utils.jwt_user import (
     create_access_token,
     get_current_user
 )
-from app.config.config import (
-    STATUS_CODE,
-    ACCESS_TOKEN_EXPIRE_MINUTES
-)
+from app.config.config import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.schemas.pydantic_users import (
     Register,
     Token,
     Login,
     UserResponse,
+    FullUserResponse,
     UserData
 )
 from html import escape
@@ -31,7 +29,7 @@ users_router = APIRouter(prefix="/users", tags=["Users"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-@users_router.get("/profile/{user_id}", response_model=UserResponse)
+@users_router.get("/profile/{user_id}", response_model=FullUserResponse)
 async def get_user_profile(
     user_id: int,
     xss_secure: bool = True
@@ -41,21 +39,19 @@ async def get_user_profile(
     if not user:
         raise HTTPException(status_code=404, detail="user not found")
     
-    return UserResponse(
-        username=user.get("username"),
-        email=user.get("email"),
-        questions=user.get("questions"),
-        tests=user.get("tests")
+    return FullUserResponse(
+        username=user["username"],
+        email=user["email"],
+        questions=user["questions"],
+        tests=user["tests"],
+        is_admin=user["is_admin"]
     )
 
 
 @users_router.post("/register", response_model=Token)
 async def create_user(user: Register):
     password_hash = pwd_context.hash(user.password.lower())
-    try:
-        register_user(username=user.username.lower(), password=password_hash, email=user.email)
-    except ValueError as error:
-        raise HTTPException(status_code=STATUS_CODE.get(str(error).lower()), detail=str(error))
+    register_user(username=user.username.lower(), password=password_hash, email=user.email, is_admin=False)
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = await create_access_token(
@@ -66,10 +62,7 @@ async def create_user(user: Register):
 
 @users_router.post("/login", response_model=Token)
 async def login(user: Login):
-    try:
-        user_password = get_user_by_username(username=user.username.lower()).get("password")
-    except ValueError as error:
-        raise HTTPException(status_code=STATUS_CODE.get(str(error).lower()), detail=str(error))
+    user_password = get_user_by_username(username=user.username.lower()).get("password")
 
     if not pwd_context.verify(user.password.lower(), user_password):
         raise HTTPException(status_code=400, detail='Invalid password')
