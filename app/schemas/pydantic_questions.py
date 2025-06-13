@@ -4,6 +4,7 @@ from pydantic import (
     Field,
     conlist
 )
+from app.db.check_status import CheckStatus
 
 
 class AnswerCreate(BaseModel):
@@ -13,7 +14,7 @@ class AnswerCreate(BaseModel):
 
 class QuestionCreate(BaseModel):
     title: str = Field(..., title="Title", min_length=1, max_length=100, description="Title of the question")
-    description: Optional[str] = Field(..., title="Description", min_length=1, max_length=500,
+    description: Optional[str] = Field(title="Description", min_length=1, max_length=500,
                                        description="Description of the test")
     answers: conlist(AnswerCreate, min_length=2, max_length=4) = Field(...,
                                                                        title="Answers",
@@ -43,10 +44,10 @@ class QuestionResponse(BaseModel):
     title: str = Field(..., title="Title", min_length=1, max_length=100, description="Title of the question")
     user_id: int = Field(..., title="User ID", description="ID of the user who created the question")
 
-    answers_count: int = Field(
+    answers: list[AnswerCreate] = Field(
         ...,
         title="Answers",
-        description="Count of answers that contain this question",
+        description="Answers that contain this question",
     )
 
     tests_count: Optional[int] = Field(
@@ -54,3 +55,6 @@ class QuestionResponse(BaseModel):
         title="Tests",
         description="Count of tests that contain this question"
     )
+
+class FullQuestionResponse(QuestionResponse):
+    status: CheckStatus = Field(..., title="Status", description="status of question")

@@ -22,8 +22,8 @@ class Answers(Base):
         return {
             "id": self.id,
             "title": self.title if xss_secure is False else escape(self.title) ,
-            "is_right": self.is_right if xss_secure is False else escape(self.is_right),
-            "question_id": self.question_id if xss_secure is False else escape(self.question_id),
+            "is_right": self.is_right,
+            "question_id": self.question_id,
         }
 
     def __repr__(self, xss_secure: bool = True):
@@ -31,7 +31,7 @@ class Answers(Base):
             f"<Answers("
             f"id={self.id}, "
             f"title={self.title if xss_secure is False else escape(self.title)}, "
-            f"is_right={self.is_right if xss_secure is False else escape(self.is_right)}, "
-            f"question_id={self.question_id if xss_secure is False else escape(self.question_id)}"
+            f"is_right={self.is_right}, "
+            f"question_id={self.question_id}"
             ")>"
         )
