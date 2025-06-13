@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Response
 from app.db.check_status import CheckStatus
 from app.db.queries.users import get_user_by_username
+from app.exceptions import QuestionError
 from app.schemas.pydantic_questions import (
     QuestionCreate,
     QuestionResponse,
@@ -90,7 +91,7 @@ async def get_all_questions_api(
 async def get_question_by_id_api(question_id: int, xss_secure: bool = True, current_user: UserData = Depends(get_current_user)):
     question = get_question_by_id(question_id=question_id, xss_secure=xss_secure)
     if question.get("status") != CheckStatus.APPROVED and (current_user is None or question.get("user_id") != current_user.id and current_user.is_admin is False):
-        raise HTTPException(status_code=423, detail="Question awaiting review")
+        raise QuestionError(status_code=423, message="Question awaiting review", question_id=question_id)
     return FullQuestionResponse(
         id=question["id"],
         title=question["title"],

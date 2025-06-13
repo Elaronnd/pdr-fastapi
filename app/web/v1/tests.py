@@ -86,9 +86,6 @@ async def get_test(
 ):
     test = get_test_by_id(test_id=test_id, xss_secure=xss_secure)
 
-    if not test:
-        raise HTTPException(status_code=404, detail="Test not found")
-
     return TestResponse(
         id=test["id"],
         title=test["title"],

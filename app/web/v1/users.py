@@ -1,9 +1,9 @@
 from datetime import timedelta
 from app.db.queries import get_user_by_id
 from passlib.context import CryptContext
+from app.exceptions import UserIdError, UsernameError
 from fastapi import (
     APIRouter,
-    HTTPException,
     Depends
 )
 from app.db.queries.users import (
@@ -37,7 +37,7 @@ async def get_user_profile(
     user = get_user_by_id(user_id, xss_secure=xss_secure)
 
     if not user:
-        raise HTTPException(status_code=404, detail="user not found")
+        raise UserIdError(status_code=404, message="user not found", user_id=user_id)
     
     return FullUserResponse(
         username=user["username"],
@@ -65,7 +65,7 @@ async def login(user: Login):
     user_password = get_user_by_username(username=user.username.lower()).get("password")
 
     if not pwd_context.verify(user.password.lower(), user_password):
-        raise HTTPException(status_code=400, detail='Invalid password')
+        raise UsernameError(status_code=400, message='Invalid password', username=user.username)
 
     access_token = await create_access_token(data={"sub": user.username.lower()})
     return Token(access_token=access_token, token_type="bearer")

@@ -13,3 +13,4 @@ DB_NAME = config_data["db_name"]
 JWT_PRIVATE_KEY = config_data["jwt_private_key"]
 JWT_PUBLIC_KEY = config_data["jwt_public_key"]
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+FORBIDDEN_TAGS = ("(Admin)", "(System)")

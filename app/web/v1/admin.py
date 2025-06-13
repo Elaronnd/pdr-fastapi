@@ -19,7 +19,9 @@ async def change_status_question(
     xss_secure: bool = True,
     current_user: UserData = Depends(get_current_user)
 ):
-    if current_user.is_admin is False:
+    if current_user is None:
+        raise HTTPException(status_code=403, detail="Not authenticated")
+    elif current_user.is_admin is False:
         raise HTTPException(status_code=403, detail="You are not admin")
     question = edit_status_question(
         question_id=question_id,
