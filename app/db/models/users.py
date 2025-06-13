@@ -14,6 +14,7 @@ class Users(Base):
     username: Mapped[str] = mapped_column(nullable=False)
     email: Mapped[str] = mapped_column(nullable=False)
     password: Mapped[str] = mapped_column(nullable=False)
+    is_admin: Mapped[bool] = mapped_column(nullable=False)
 
     questions: Mapped[list['Questions']] = relationship(back_populates='user')
     tests: Mapped[list['Tests']] = relationship(back_populates='user')
@@ -25,7 +26,8 @@ class Users(Base):
             'email': self.email if xss_secure is False else escape(self.email),
             'password': self.password,
             'questions': [question.to_dict(xss_secure=xss_secure) for question in self.questions],
-            'tests': [test.to_dict(xss_secure=xss_secure) for test in self.tests]
+            'tests': [test.to_dict(xss_secure=xss_secure) for test in self.tests],
+            'is_admin': self.is_admin
         }
 
     def __repr__(self):
@@ -36,6 +38,7 @@ class Users(Base):
             f'email={self.email}), '
             f'password={self.password}), '
             f'questions={self.questions}), '
-            f'tests={self.tests}'
+            f'tests={self.tests}, '
+            f'is_admin={self.is_admin}'
             f')>'
         )

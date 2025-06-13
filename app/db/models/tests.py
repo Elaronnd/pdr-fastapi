@@ -39,8 +39,8 @@ class Tests(Base):
         return (
             f'<Tests('
             f'id={self.id}, '
-            f'title={self.title}, '
-            f'description={self.description}), '
+            f'title={escape(self.title)}, '
+            f'description={escape(self.description)}), '
             f'questions={self.questions}, '
             f'user_id={self.user_id})>'
         )
