@@ -15,5 +15,5 @@ from app.db.queries.questions import (
     delete_question,
     get_all_questions,
     get_question_by_id,
-    edit_status_question
+    edit_status_question,
 )

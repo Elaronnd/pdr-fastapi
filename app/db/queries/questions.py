@@ -8,6 +8,10 @@ from app.db.models import (
     Answers
 )
 
+from app.utils.searchs_tools import (
+    index_question
+)
+
 
 def create_question_with_answers(title: str, user_id: int, answers: list, status: CheckStatus, description: Optional[str] = None, xss_secure: bool = True):
     with Session() as session:
@@ -22,11 +26,13 @@ def create_question_with_answers(title: str, user_id: int, answers: list, status
 
         for answer in answers:
             answer_obj = Answers(
-                title=answer.title,
-                is_right=answer.is_right,
+                title=answer['title'],
+                is_right=answer['is_right'],
                 question_id=question.id
             )
             session.add(answer_obj)
+
+        index_question(question)
 
         session.commit()
         session.refresh(question)

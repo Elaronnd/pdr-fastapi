@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Response
+from fastapi import APIRouter, HTTPException, Depends, Response, Query
 from app.db.check_status import CheckStatus
 from app.db.queries.users import get_user_by_username
 from app.exceptions import QuestionError
@@ -13,10 +13,37 @@ from app.db.queries import (
     get_all_questions,
     get_question_by_id
 )
+
+from app.utils.searchs_tools import (
+    search_question_elastic
+)
+
 from app.schemas.pydantic_users import UserData
 from app.utils.jwt_user import get_current_user
 
 questions_router = APIRouter(prefix="/questions", tags=["Questions"])
+
+@questions_router.get("/search", response_model=list[QuestionResponse])
+async def search_questions_api(query: str = Query(...)):
+    if not query:
+        raise HTTPException(status_code=400, detail="Query parameter is required")
+    
+    results = search_question_elastic(query=query)
+
+    if not results:
+        raise HTTPException(status_code=404, detail="No questions found matching the query")
+    
+    return [
+        QuestionResponse(
+            id=int(result["id"]),
+            title=result["title"],
+            user_id=int(result["user_id"]),
+            description=result.get("description", ""),
+            answers=[],
+            tests_count=0
+        )
+        for result in results
+    ]
 
 
 @questions_router.post("/", response_model=QuestionResponse)

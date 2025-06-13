@@ -53,7 +53,9 @@ class QuestionResponse(BaseModel):
     tests_count: Optional[int] = Field(
         default=None,
         title="Tests",
-        description="Count of tests that contain this question"
+        description="Count of tests that contain this question",
+        answers=[],
+        tests_count=None,
     )
 
 class FullQuestionResponse(QuestionResponse):
