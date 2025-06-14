@@ -1,7 +1,8 @@
+from aiocache import cached
 from sqlalchemy import select
 from typing import Optional
-
 from sqlalchemy.orm import selectinload
+from app.cache.db.queries import set_cache, delete_cache
 from app.db.queries.answers import delete_answer
 from app.db.base import Session
 from app.db.check_status import CheckStatus
@@ -48,10 +49,20 @@ async def create_question_with_answers(title: str, user_id: int, answers: list, 
         )
         question = question.scalar_one()
 
-        return question.to_dict(xss_secure=xss_secure)
+        result = question.to_dict(xss_secure=xss_secure)
+
+        await set_cache(key="question", cache_id=question.id, value=result)
+        await set_cache(key="questions", cache_id=True, value=result)
+
+        if status == CheckStatus.APPROVED:
+            await set_cache(key="questions", cache_id=False, value=result)
+
+        return result
 
 
-async def delete_question(question_id: int):
+async def delete_question(
+        question_id: int
+):
     async with Session() as session:
         question = await session.execute(
             select(Questions)
@@ -60,13 +71,18 @@ async def delete_question(question_id: int):
         )
         question = question.scalar_one_or_none()
 
-        for answer in question.answers:
-            await delete_answer(answer_id=answer.id)
-
         if not question:
             raise QuestionError(message="question not found", status_code=404, question_id=question_id)
 
+        for answer in question.answers:
+            await delete_answer(answer_id=answer.id, user_id=answer.user_id)
+
         await session.delete(question)
+
+        await delete_cache(key="question", cache_id=question_id)
+        await delete_cache(key="questions", cache_id=True)
+        await delete_cache(key="questions", cache_id=False)
+
         await session.commit()
 
 
@@ -96,9 +112,9 @@ async def edit_status_question(question_id: int, status: CheckStatus, xss_secure
 async def get_all_questions(status: Optional[CheckStatus] = None, xss_secure: bool = True):
     async with Session() as session:
         if status is None:
-            request = select(Questions)
+            request = select(Questions).options(selectinload(Questions.answers), selectinload(Questions.test_questions))
         else:
-            request = select(Questions).where(Questions.status == status)
+            request = select(Questions).where(Questions.status == status).options(selectinload(Questions.answers), selectinload(Questions.test_questions))
 
         questions = await session.execute(request)
         questions = questions.scalars().all()
@@ -109,6 +125,7 @@ async def get_all_questions(status: Optional[CheckStatus] = None, xss_secure: bo
         return [question.to_dict(xss_secure=xss_secure) for question in questions]
 
 
+@cached(ttl=60, key="question:{question_id}")
 async def get_question_by_id(question_id: int, xss_secure: bool = True):
     async with Session() as session:
         question = await session.execute(
@@ -179,4 +196,12 @@ async def edit_question(
         await session.commit()
         await session.refresh(question)
 
-        return question.to_dict(xss_secure=xss_secure)
+        result = question.to_dict(xss_secure=xss_secure)
+
+        await set_cache(key="question", cache_id=question_id, value=result)
+        await set_cache(key="questions", cache_id=True, value=result)
+
+        if question.status == CheckStatus.APPROVED:
+            await set_cache(key="questions", cache_id=False, value=result)
+
+        return result

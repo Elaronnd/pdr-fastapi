@@ -23,7 +23,6 @@ from app.schemas.pydantic_users import (
     Register,
     Token,
     Login,
-    UserResponse,
     FullUserResponse,
     UserData
 )
@@ -54,35 +53,37 @@ async def get_user_profile(
 @users_router.post("/register", response_model=Token)
 async def create_user(user: Register):
     password_hash = pwd_context.hash(user.password.lower())
-    await register_user(username=user.username.lower(), password=password_hash, email=user.email, is_admin=False)
+    user_info = await register_user(username=user.username.lower(), password=password_hash, email=user.email, is_admin=False)
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = await create_access_token(
-        data={"sub": user.username.lower()}, expires_delta=access_token_expires
+        data={"sub": str(user_info["id"])}, expires_delta=access_token_expires
     )
     return Token(access_token=access_token, token_type="bearer")
 
 
 @users_router.post("/login", response_model=Token)
 async def login(user: Login):
-    user_password = await get_user_by_username(username=user.username.lower())
-    user_password = user_password.get("password")
+    user_info = await get_user_by_username(username=user.username.lower())
+    user_password = user_info["password"]
 
     if not pwd_context.verify(user.password.lower(), user_password):
         raise UsernameError(status_code=400, message='Invalid password', username=user.username)
 
-    access_token = await create_access_token(data={"sub": user.username.lower()})
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = await create_access_token(data={"sub": str(user_info["id"])}, expires_delta=access_token_expires)
     return Token(access_token=access_token, token_type="bearer")
 
 
-@users_router.get("/profile", response_model=UserResponse)
+@users_router.get("/profile", response_model=FullUserResponse)
 async def read_users_me(
     current_user: UserData = Depends(get_current_user),
     xss_secure: bool = True
 ):
-    return UserResponse(
+    return FullUserResponse(
         username=current_user.username if xss_secure is False else escape(current_user.username),
         email=current_user.email if xss_secure is False else escape(current_user.email),
         questions=current_user.questions,
-        tests=current_user.tests
+        tests=current_user.tests,
+        is_admin=current_user.is_admin
     )

@@ -1,6 +1,5 @@
 from contextlib import asynccontextmanager
 from io import BytesIO
-
 from PIL.Image import Image
 from aiobotocore.session import get_session
 from botocore.exceptions import ClientError

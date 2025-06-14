@@ -1,6 +1,12 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from app.cache.settings import set_redis
+from app.db.base import create_db
+from app.db.queries import register_user
+from app.exceptions.users import UserError
 from app.web.v1.__init__ import router_v1
+from app.db.models import *
 from app.exceptions import (
     UserIdError,
     UsernameError,
@@ -18,6 +24,29 @@ app = FastAPI(
     docs_url="/"
 )
 app.include_router(router_v1)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await set_redis()
+    await register_user(
+        username="admin",
+        password="$2b$12$O4v800b1IbjseJWv3tqQsOb19cIMLC/1LtUHy2aChdRIwX0v2B.ki",
+        email="admin@admin.com",
+        is_admin=True
+    ) # password: admin
+    await create_db()
+    yield
+
+
+@app.exception_handler(UserError)
+async def user_id_error_handler(request: Request, exception: UserError):
+    return JSONResponse(
+        status_code=exception.status_code,
+        content={
+            "detail": exception.message
+        },
+    )
 
 
 @app.exception_handler(UserIdError)

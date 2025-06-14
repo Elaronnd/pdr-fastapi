@@ -12,18 +12,20 @@ from app.config.config import (
     DB_NAME
 )
 
-# engine = create_engine(f'postgresql+asyncpg://{DB_USERNAME}:{DB_PASSWORD}@{DB_ADDRESS}:{DB_PORT}/{DB_NAME}', echo=True)
+engine = create_async_engine(f'postgresql+asyncpg://{DB_USERNAME}:{DB_PASSWORD}@{DB_ADDRESS}:{DB_PORT}/{DB_NAME}',
+                             echo=True)
 
-# Потім замінемо на postgres
-engine = create_async_engine("sqlite+aiosqlite:///app.db", echo=True)
 
 class Base(DeclarativeBase):
     ...
 
+
 Session = sessionmaker(
     bind=engine,
-    class_=AsyncSession
+    class_=AsyncSession,
+    expire_on_commit=False
 )
+
 
 async def create_db():
     async with engine.begin() as conn:
