@@ -1,5 +1,5 @@
 from typing import Optional
-from app.schemas.pydantic_questions import QuestionResponse
+from app.schemas.pydantic_questions import QuestionResponse, FullQuestionResponse
 from pydantic import (
     BaseModel,
     Field,
@@ -23,3 +23,11 @@ class TestResponse(BaseTest):
         description="List of questions"
     )
     user_id: int = Field(..., title="User ID", description="ID of the user who created the question")
+
+
+class FullTestResponse(TestResponse):
+    questions: list[FullQuestionResponse] = Field(
+        default_factory=list,
+        title="Questions",
+        description="List of questions"
+    )

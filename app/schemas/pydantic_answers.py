@@ -1,8 +1,7 @@
 from typing import Optional
 from pydantic import (
     BaseModel,
-    Field,
-    conlist
+    Field
 )
 
 class AnswerCreate(BaseModel):
@@ -18,3 +17,6 @@ class FullAnswerInQuestionResponse(AnswerInQuestionResponse):
 
 class AnswerResponse(AnswerInQuestionResponse):
     question_id: int = Field(..., title="Question ID", description="ID of the question this answer belongs to")
+
+class FullAnswerResponse(AnswerResponse):
+    image_url: Optional[str] = Field(default=None, title="Image url", description="Url to answer image")

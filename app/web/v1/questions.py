@@ -1,7 +1,11 @@
-from fastapi import APIRouter, HTTPException, Depends, Response
+from typing import Optional
+from fastapi import APIRouter, HTTPException, Depends, Response, BackgroundTasks, UploadFile, File, Form
 from app.db.check_status import CheckStatus
+from app.db.queries.questions import is_owner_user, edit_question
 from app.db.queries.users import get_user_by_username
-from app.exceptions import QuestionError
+from app.exceptions import QuestionError, QuestionImageError
+from app.images.image_check import image_validator
+from app.images.image_to_r2 import save_image
 from app.schemas.pydantic_answers import AnswerInQuestionResponse, FullAnswerInQuestionResponse
 from app.schemas.pydantic_questions import (
     QuestionCreate,
@@ -60,6 +64,49 @@ async def add_question(
     )
 
 
+@questions_router.post("/{question_id}", response_model=QuestionResponse)
+async def edit_question_api(
+        question_id: int,
+        background_tasks: BackgroundTasks,
+        title: Optional[str] = Form(default=None, min_length=1, max_length=100),
+        description: Optional[str] = Form(default=None, title="Description", min_length=1, max_length=500, description="Description of the test"),
+        image: Optional[UploadFile] = File(default=None, title="Your image", description="If you want you can upload image of your product"),
+        xss_secure: bool = True,
+        current_user: UserData = Depends(get_current_user)
+):
+    if current_user is None:
+        raise HTTPException(status_code=403, detail="Not authenticated")
+    is_owner = await is_owner_user(question_id=question_id, user_id=current_user.id)
+    if is_owner is False and current_user.is_admin is False:
+        raise HTTPException(status_code=403, detail="You are not owner the answer")
+
+    elif image is not None or image != "":
+        image_bytes = await image.read()
+        image_size = (500, 500)
+        await image_validator(image=image, image_bytes=image_bytes, image_size=image_size, exception_image_error=QuestionImageError)
+
+        image.file.seek(0)
+        background_tasks.add_task(save_image, image_bytes=image_bytes, answer_id=None, question_id=question_id, folder="questions", image_size=image_size)
+
+    question = await edit_question(question_id=question_id, title=title, description=description, xss_secure=xss_secure, status=CheckStatus.PENDING if current_user.is_admin is False else CheckStatus.APPROVED)
+
+    return FullQuestionResponse(
+        id=question["id"],
+        title=question["title"],
+        user_id=question["user_id"],
+        answers=[
+            FullAnswerInQuestionResponse(
+                id=answer["id"],
+                title=answer["title"],
+                is_right=answer["is_right"],
+                image_url=None if answer["filename"] is None else r2_client.generate_image_url(filename=f"answers/{answer["filename"]}")
+            ) for answer in question["answers"]
+        ],
+        tests_count=question["test_count"],
+        status=question["status"],
+        image_url=None if question["filename"] is None else r2_client.generate_image_url(filename=f"questions/{question["filename"]}")
+    )
+
 @questions_router.delete("/{question_id}")
 async def delete_question_api(
         question_id: int,
@@ -115,9 +162,10 @@ async def get_question_by_id_api(question_id: int, xss_secure: bool = True, curr
                 id=answer["id"],
                 title=answer["title"],
                 is_right=answer["is_right"],
-                image_url=None if answer["filename"] is None else r2_client.generate_image_url(filename=answer["filename"])
+                image_url=None if answer["filename"] is None else r2_client.generate_image_url(filename=f"answers/{answer["filename"]}")
             ) for answer in question["answers"]
         ],
         tests_count=question["test_count"],
-        status=question["status"]
+        status=question["status"],
+        image_url=None if question["filename"] is None else r2_client.generate_image_url(filename=f"questions/{question["filename"]}")
     )

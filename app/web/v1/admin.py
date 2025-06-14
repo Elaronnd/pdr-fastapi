@@ -1,11 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from app.db.check_status import CheckStatus
-from app.schemas.pydantic_questions import (
-    FullQuestionResponse
-)
-from app.db.queries import (
-    edit_status_question
-)
+from app.schemas.pydantic_questions import FullQuestionResponse
+from app.db.queries import edit_status_question
 from app.schemas.pydantic_users import UserData
 from app.jwt.users import get_current_user
 

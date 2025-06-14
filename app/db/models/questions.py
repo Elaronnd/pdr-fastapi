@@ -16,7 +16,7 @@ class Questions(Base):
     title: Mapped[str] = mapped_column(nullable=False)
     description: Mapped[str] = mapped_column(nullable=True)
     status: Mapped[CheckStatus] = mapped_column(Enum(CheckStatus), nullable=False, default=CheckStatus.PENDING)
-    image_name: Mapped[str] = mapped_column(nullable=True)
+    filename: Mapped[str] = mapped_column(nullable=True)
 
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
     user: Mapped['Users'] = relationship(back_populates='questions')

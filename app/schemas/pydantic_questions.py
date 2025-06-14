@@ -56,3 +56,5 @@ class FullQuestionResponse(QuestionResponse):
         title="Answers",
         description="Answers that contain this question",
     )
+
+    image_url: Optional[str] = Field(default=None, title="Image url", description="Url to question image")

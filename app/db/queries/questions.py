@@ -125,3 +125,58 @@ async def get_question_by_id(question_id: int, xss_secure: bool = True):
             raise QuestionError(message="question not found", status_code=404, question_id=question_id)
 
         return question.to_dict(xss_secure=xss_secure)
+
+
+
+async def is_owner_user(
+    question_id: int,
+    user_id: int
+) -> bool:
+    async with Session() as session:
+        question = await session.execute(select(Questions).where(Questions.id == question_id))
+        question = question.scalar_one_or_none()
+
+        if not question:
+            raise QuestionError(message="answer not found", status_code=404, question_id=question_id)
+        elif question.user_id != user_id:
+            return False
+        return True
+
+
+async def edit_question(
+        question_id: int,
+        status: CheckStatus = None,
+        title: str = None,
+        description: str = None,
+        filename: str = None,
+        xss_secure: bool = True
+):
+    async with Session() as session:
+        question = await session.execute(
+            select(Questions)
+            .where(Questions.id == question_id)
+            .options(
+                selectinload(Questions.answers),
+                selectinload(Questions.test_questions)
+            )
+        )
+        question = question.scalar_one_or_none()
+
+        if not question:
+            raise QuestionError(message="answer not found", status_code=404, question_id=question_id)
+        elif title is not None:
+            question.title = title
+
+        if filename is not None:
+            question.filename = filename
+
+        if description is not None:
+            question.description = description
+
+        if status is not None:
+            question.status = status
+
+        await session.commit()
+        await session.refresh(question)
+
+        return question.to_dict(xss_secure=xss_secure)

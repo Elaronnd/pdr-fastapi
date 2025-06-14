@@ -1,7 +1,12 @@
 from datetime import timedelta
 from app.db.queries import get_user_by_id
 from passlib.context import CryptContext
-from app.exceptions import UserIdError, UsernameError
+from app.config.config import ACCESS_TOKEN_EXPIRE_MINUTES
+from html import escape
+from app.exceptions import (
+    UserIdError,
+    UsernameError
+)
 from fastapi import (
     APIRouter,
     Depends
@@ -14,7 +19,6 @@ from app.jwt.users import (
     create_access_token,
     get_current_user
 )
-from app.config.config import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.schemas.pydantic_users import (
     Register,
     Token,
@@ -23,7 +27,6 @@ from app.schemas.pydantic_users import (
     FullUserResponse,
     UserData
 )
-from html import escape
 
 users_router = APIRouter(prefix="/users", tags=["Users"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

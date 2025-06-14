@@ -10,7 +10,7 @@ from app.web.v1.answers import answers_router
 router_v1 = APIRouter(prefix="/v1")
 router_v1.include_router(users_router)
 router_v1.include_router(questions_router)
+router_v1.include_router(answers_router)
 router_v1.include_router(tests_router)
 router_v1.include_router(websocket_router)
 router_v1.include_router(admin_router)
-router_v1.include_router(answers_router)

@@ -29,12 +29,12 @@ class R2Client:
         async with self.session.create_client("s3", **self.config) as client:
             yield client
 
-    async def object_exists(self, object_name: str) -> bool:
+    async def is_file_exists(self, filename: str, folder: str) -> bool:
         async with self.get_client() as client:
             try:
                 await client.head_object(
                     Bucket=self.bucket_name,
-                    Key=object_name
+                    Key=f"{folder}/{filename}"
                 )
                 return True
             except ClientError as error:
@@ -45,9 +45,10 @@ class R2Client:
     async def upload_file(
             self,
             img: Image,
-            filename: str
+            filename: str,
+            folder: str
     ):
-        if await self.object_exists(object_name=filename) is True:
+        if await self.is_file_exists(filename=filename, folder=folder) is True:
             raise FileExistsError("filename already in S3 database")
 
         buffer = BytesIO()
@@ -57,16 +58,16 @@ class R2Client:
         async with self.get_client() as client:
             await client.put_object(
                 Bucket=self.bucket_name,
-                Key=filename,
+                Key=f"{folder}/{filename}",
                 Body=buffer
             )
 
-    async def delete_file(self, filename: str):
+    async def delete_file(self, filename: str, folder: str):
         async with self.get_client() as client:
             try:
                 await client.delete_object(
                     Bucket=self.bucket_name,
-                    Key=filename
+                    Key=f"{folder}/{filename}"
                 )
             except ClientError as error:
                 if error.response["ResponseMetadata"]["HTTPStatusCode"] == 404:
@@ -75,12 +76,13 @@ class R2Client:
 
     async def generate_image_url(
             self,
-            filename: str
+            filename: str,
+            folder: str
     ) -> str:
         async with self.get_client() as client:
             url = await client.generate_presigned_url(
                 'get_object',
-                Params={'Bucket': self.bucket_name, 'Key': filename},
+                Params={'Bucket': self.bucket_name, 'Key': f"{folder}/{filename}"},
                 ExpiresIn=3600
             )
             return url

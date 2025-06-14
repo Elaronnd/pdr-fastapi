@@ -48,7 +48,8 @@ async def edit_answer(
             raise AnswerIdError(message="answer not found", status_code=404, answer_id=answer_id)
         elif title is not None:
             answer.title = title
-        elif filename is not None:
+
+        if filename is not None:
             answer.filename = filename
 
         await session.commit()
@@ -68,7 +69,7 @@ async def delete_answer(
             raise AnswerIdError(message="answer not found", status_code=404, answer_id=answer_id)
 
         if answer.filename is not None:
-            await r2_client.delete_file(filename=answer.filename)
+            await r2_client.delete_file(filename=answer.filename, folder="answers")
 
         await session.delete(answer)
         await session.commit()

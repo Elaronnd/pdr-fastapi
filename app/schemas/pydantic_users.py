@@ -3,7 +3,7 @@ from pydantic import (
     BaseModel,
     Field,
     EmailStr,
-    BeforeValidator,
+    BeforeValidator
 )
 
 
