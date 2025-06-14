@@ -1,6 +1,8 @@
+from aiocache import cached
 from jwt.exceptions import InvalidTokenError
 from typing import Union, Optional
-from app.db.queries.users import get_user_by_username
+
+from app.db.queries.users import get_user_by_id
 from app.schemas.pydantic_users import UserData
 from jwt.api_jwt import (
     decode,
@@ -29,17 +31,17 @@ from app.config.config import (
 security = HTTPBearer(auto_error=False)
 
 
-async def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
+async def create_access_token(data: dict, expires_delta: timedelta):
     to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
+    expire = datetime.now(timezone.utc) + expires_delta
+    to_encode.update(
+        {"exp": expire}
+    )
     encoded_jwt = encode(to_encode, JWT_PRIVATE_KEY, algorithm="RS256")
     return encoded_jwt
 
 
+@cached(ttl=60, key="jwt:{token}")
 async def get_current_user(token: HTTPAuthorizationCredentials = Security(security)) -> Optional[UserData]:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -50,13 +52,13 @@ async def get_current_user(token: HTTPAuthorizationCredentials = Security(securi
         return None
     try:
         payload = decode(token.credentials, JWT_PUBLIC_KEY, algorithms="RS256")
-        username = payload.get("sub")
-        if username is None:
+        user_id = payload.get("sub")
+        if user_id is None:
             raise credentials_exception
     except InvalidTokenError:
         raise credentials_exception
 
-    user = await get_user_by_username(username=username, xss_secure=False)
+    user = await get_user_by_id(user_id=int(user_id))
 
     return UserData(
         id=user["id"],
@@ -68,6 +70,7 @@ async def get_current_user(token: HTTPAuthorizationCredentials = Security(securi
         is_admin=user["is_admin"]
     )
 
+@cached(ttl=60, key="jwt:{token}")
 async def get_current_user_ws(
     token: str = Header(title="JWT token", description="Your JWT token without \"Bearer\"")
 ) -> Optional[UserData]:
@@ -77,13 +80,13 @@ async def get_current_user_ws(
     )
     try:
         payload = decode(token, JWT_PUBLIC_KEY, algorithms="RS256")
-        username = payload.get("sub")
-        if username is None:
+        user_id = payload.get("sub")
+        if user_id is None:
             raise credentials_exception
     except InvalidTokenError:
         raise credentials_exception
 
-    user = await get_user_by_username(username=username)
+    user = await get_user_by_id(user_id=int(user_id))
 
     return UserData(
         id=user["id"],

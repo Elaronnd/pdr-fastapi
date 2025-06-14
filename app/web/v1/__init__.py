@@ -3,7 +3,7 @@ from app.web.v1.users import users_router
 from app.web.v1.questions import questions_router
 from app.web.v1.tests import tests_router
 from app.web.v1.websockets import websocket_router
-from app.web.v1.admin import admin_router
+from app.web.v1.admin.__init__ import admin_router
 from app.web.v1.answers import answers_router
 
 

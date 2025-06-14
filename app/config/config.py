@@ -16,5 +16,7 @@ ACCESS_KEY_R2 = config_data["access_key_r2"]
 SECRET_KEY_R2 = config_data["secret_key_r2"]
 ENDPOINT_URL_R2 = config_data["endpoint_url_r2"]
 BUCKET_NAME_R2 = config_data["bucket_name_r2"]
+REDIS_ADDRESS = config_data["redis_address"]
+REDIS_PORT = config_data["redis_port"]
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 FORBIDDEN_TAGS = ("(Admin)", "(System)")

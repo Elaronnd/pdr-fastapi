@@ -45,12 +45,12 @@ async def create_test(
                         id=answer["id"],
                         title=answer["title"],
                         is_right=answer["is_right"],
-                        image_url=None if answer["filename"] is None else r2_client.generate_image_url(filename=f"answers/{answer["filename"]}")
+                        image_url=None if answer["filename"] is None else r2_client.generate_image_url(filename=f"answers/{answer['filename']}")
                     ) for answer in question["answers"]
                 ],
                 tests_count=question["test_count"],
                 status=question["status"],
-                image_url=None if question["filename"] is None else r2_client.generate_image_url(filename=f"questions/{question["filename"]}")
+                image_url=None if question["filename"] is None else r2_client.generate_image_url(filename=f"questions/{question['filename']}")
             )
             for question in created_test["questions"]
         ],
@@ -97,7 +97,7 @@ async def delete_test_api(
     if current_user is None:
         raise HTTPException(status_code=403, detail="Not authenticated")
     user_data = await get_user_by_username(username=current_user.username)
-    user_tests = user_data.get("tests", [])
+    user_tests = user_data["tests"]
 
     if any(test.get("id") == test_id for test in user_tests) or current_user.is_admin is True:
         await delete_test(test_id=test_id)
@@ -127,12 +127,12 @@ async def get_test(
                         id=answer["id"],
                         title=answer["title"],
                         is_right=answer["is_right"],
-                        image_url=None if answer["filename"] is None else r2_client.generate_image_url(filename=f"answers/{answer["filename"]}")
+                        image_url=None if answer["filename"] is None else r2_client.generate_image_url(filename=f"answers/{answer['filename']}")
                     ) for answer in question["answers"]
                 ],
                 tests_count=question["test_count"],
                 status=question["status"],
-                image_url=None if question["filename"] is None else r2_client.generate_image_url(filename=f"questions/{question["filename"]}")
+                image_url=None if question["filename"] is None else r2_client.generate_image_url(filename=f"questions/{question['filename']}")
             )
             for question in test["questions"]
         ],

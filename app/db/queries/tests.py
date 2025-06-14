@@ -1,11 +1,9 @@
+from aiocache import cached
 from sqlalchemy import select
 from typing import Optional
-
 from sqlalchemy.orm import selectinload
-
-from app.db.base import (
-    Session
-)
+from app.cache.db.queries import delete_cache, set_cache
+from app.db.base import Session
 from app.exceptions import UserIdError, TestsError, TestError, QuestionError, QuestionsListError
 from app.db.check_status import CheckStatus
 from app.db.models import (
@@ -24,20 +22,17 @@ async def create_test_db(
     xss_secure: bool = True
 ) -> dict:
     async with Session() as session:
-        # Check if user exists
         user = await session.execute(select(Users).where(Users.id == user_id))
         user = user.scalar_one_or_none()
 
         if not user:
             raise UserIdError(message="User not found", user_id=user_id, status_code=404)
 
-        # Create test
         test = Tests(title=title, description=description, user_id=user_id)
         session.add(test)
         await session.flush()
-        test_id = test.id  # Store id to avoid accessing test.id later
+        test_id = test.id
 
-        # Validate questions
         questions_ids = [question_id for question_id in questions_id]
         questions = await session.execute(
             select(Questions)
@@ -75,7 +70,6 @@ async def create_test_db(
 
         await session.commit()
 
-        # Fetch test with relationships
         test = await session.execute(
             select(Tests)
             .options(
@@ -87,6 +81,11 @@ async def create_test_db(
             .where(Tests.id == test_id)
         )
         test = test.scalar_one_or_none()
+
+        result = test.to_dict(xss_secure=xss_secure)
+
+        await set_cache(key="questions", value=result)
+        await set_cache(key="question", cache_id=test.id, value=result)
 
         return test.to_dict(xss_secure=xss_secure)
 
@@ -100,9 +99,11 @@ async def delete_test(test_id: int):
             raise TestError(message="test not found", status_code=404, test_id=test_id)
 
         await session.delete(test)
+        await delete_cache(key="question", cache_id=test_id)
         await session.commit()
 
 
+@cached(ttl=60, key="questions")
 async def get_all_tests(xss_secure: bool = True):
     async with Session() as session:
         tests = await session.execute(
@@ -122,6 +123,7 @@ async def get_all_tests(xss_secure: bool = True):
         return [test.to_dict(xss_secure=xss_secure) for test in tests]
 
 
+@cached(ttl=60, key="question:{test_id}")
 async def get_test_by_id(test_id: int, xss_secure: bool = True):
     async with Session() as session:
         test = await session.execute(
