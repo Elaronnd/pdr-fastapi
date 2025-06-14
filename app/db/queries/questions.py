@@ -9,11 +9,13 @@ from app.db.models import (
 )
 
 from app.utils.searchs_tools import (
-    index_question
+    QuestionSearcher
 )
 
 
 def create_question_with_answers(title: str, user_id: int, answers: list, status: CheckStatus, description: Optional[str] = None, xss_secure: bool = True):
+
+    searcher = QuestionSearcher()
     with Session() as session:
         user = session.query(Users).filter_by(id=user_id).one_or_none()
 
@@ -32,7 +34,7 @@ def create_question_with_answers(title: str, user_id: int, answers: list, status
             )
             session.add(answer_obj)
 
-        index_question(question)
+        searcher.index_question(question)
 
         session.commit()
         session.refresh(question)

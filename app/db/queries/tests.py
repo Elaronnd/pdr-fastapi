@@ -11,9 +11,15 @@ from app.db.models import (
     Questions
 )
 
+from app.utils.searchs_tools import (
+    SearcherTests
+)
+
 
 def create_test_db(title: str, user_id: int, questions_id: list[int], description: Optional[str] = None,
                    xss_secure: bool = True):
+    searcher = SearcherTests()
+
     with Session() as session:
         user = session.query(Users).filter_by(id=user_id).one_or_none()
 
@@ -44,6 +50,8 @@ def create_test_db(title: str, user_id: int, questions_id: list[int], descriptio
                 question_id=question.id
             )
             session.add(questions_to_tests_obj)
+
+        searcher.index_tests(test)
 
         session.commit()
         session.refresh(test)

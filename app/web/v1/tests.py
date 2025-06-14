@@ -2,7 +2,8 @@ from fastapi import (
     APIRouter,
     HTTPException,
     Depends,
-    Response
+    Response,
+    Query
 )
 from app.db.queries.tests import delete_test, get_all_tests
 from app.schemas.pydantic_tests import TestResponse, TestCreate
@@ -14,9 +15,41 @@ from app.db.queries import (
 )
 from app.schemas.pydantic_users import UserData
 from app.utils.jwt_user import get_current_user
+from app.utils.searchs_tools import SearcherTests
 
 tests_router = APIRouter(prefix="/tests",
                         tags=["Tests"])
+
+@tests_router.get("/search", response_model=list[TestResponse])
+async def search_tests_api(query: str = Query(...)):
+    searcher = SearcherTests()
+
+    if not query:
+        raise HTTPException(status_code=400, detail="Query parameter is required")
+    
+    results = searcher.search_tests_elastic(query=query)
+
+    if not results:
+        raise HTTPException(status_code=404, detail="No tests found matching the query")
+    
+    return [
+        TestResponse(
+            id=int(result["id"]),
+            title=result["title"],
+            description=result.get("description", ""),
+            questions=[
+                QuestionResponse(
+                    id=question["id"],
+                    title=question["title"],
+                    user_id=question["user_id"],
+                    answers=question.get("answers", [])
+                )
+                for question in result.get("questions", [])
+            ],
+            user_id=int(result["user_id"])
+        )
+        for result in results
+    ]
 
 
 @tests_router.post("/", response_model=TestResponse)

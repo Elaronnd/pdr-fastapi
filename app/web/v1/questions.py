@@ -15,7 +15,7 @@ from app.db.queries import (
 )
 
 from app.utils.searchs_tools import (
-    search_question_elastic
+    QuestionSearcher
 )
 
 from app.schemas.pydantic_users import UserData
@@ -25,10 +25,12 @@ questions_router = APIRouter(prefix="/questions", tags=["Questions"])
 
 @questions_router.get("/search", response_model=list[QuestionResponse])
 async def search_questions_api(query: str = Query(...)):
+    searcher = QuestionSearcher()
+
     if not query:
         raise HTTPException(status_code=400, detail="Query parameter is required")
     
-    results = search_question_elastic(query=query)
+    results = searcher.search_question_elastic(query=query)
 
     if not results:
         raise HTTPException(status_code=404, detail="No questions found matching the query")
