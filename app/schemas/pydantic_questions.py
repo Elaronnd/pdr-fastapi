@@ -5,11 +5,7 @@ from pydantic import (
     conlist
 )
 from app.db.check_status import CheckStatus
-
-
-class AnswerCreate(BaseModel):
-    title: str = Field(..., title="Title", description="Your answer title", min_length=1, max_length=100)
-    is_right: bool = Field(..., title="Is right?", description="Only 1 answer can be right")
+from app.schemas.pydantic_answers import AnswerCreate, AnswerInQuestionResponse, FullAnswerInQuestionResponse
 
 
 class QuestionCreate(BaseModel):
@@ -34,17 +30,12 @@ class QuestionCreate(BaseModel):
                                                                        )
 
 
-class AnswerResponse(AnswerCreate):
-    id: int = Field(..., title="Id", description="Id of answer")
-    question_id: int = Field(..., title="Question ID", description="ID of the question this answer belongs to")
-
-
 class QuestionResponse(BaseModel):
     id: int = Field(..., title="Id", description="Id of question")
     title: str = Field(..., title="Title", min_length=1, max_length=100, description="Title of the question")
     user_id: int = Field(..., title="User ID", description="ID of the user who created the question")
 
-    answers: list[AnswerCreate] = Field(
+    answers: list[AnswerInQuestionResponse] = Field(
         ...,
         title="Answers",
         description="Answers that contain this question",
@@ -56,5 +47,14 @@ class QuestionResponse(BaseModel):
         description="Count of tests that contain this question"
     )
 
+
 class FullQuestionResponse(QuestionResponse):
     status: CheckStatus = Field(..., title="Status", description="status of question")
+
+    answers: list[FullAnswerInQuestionResponse] = Field(
+        ...,
+        title="Answers",
+        description="Answers that contain this question",
+    )
+
+    image_url: Optional[str] = Field(default=None, title="Image url", description="Url to question image")

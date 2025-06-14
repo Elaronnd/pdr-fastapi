@@ -4,8 +4,10 @@ from fastapi import (
     Depends,
     Response
 )
+from app.cloud.r2_cloudflare import r2_client
 from app.db.queries.tests import delete_test, get_all_tests
-from app.schemas.pydantic_tests import TestResponse, TestCreate
+from app.schemas.pydantic_answers import FullAnswerInQuestionResponse, AnswerInQuestionResponse
+from app.schemas.pydantic_tests import TestResponse, TestCreate, FullTestResponse
 from app.schemas.pydantic_questions import QuestionResponse, FullQuestionResponse
 from app.db.queries import (
     get_test_by_id,
@@ -13,7 +15,7 @@ from app.db.queries import (
     get_user_by_username
 )
 from app.schemas.pydantic_users import UserData
-from app.utils.jwt_user import get_current_user
+from app.jwt.users import get_current_user
 
 tests_router = APIRouter(prefix="/tests",
                         tags=["Tests"])
@@ -26,13 +28,32 @@ async def create_test(
         xss_secure: bool = True
 ):
     if current_user is None:
-        raise HTTPException(status_code=403, detail="Not authenticated")
-    created_test = create_test_db(title=test.title, description=test.description, user_id=current_user.id, questions_id=test.questions_id, xss_secure=xss_secure)
-    return TestResponse(
+        return HTTPException(status_code=403, detail="Not authenticated")
+    created_test = await create_test_db(title=test.title, description=test.description, user_id=current_user.id, questions_id=test.questions_id, xss_secure=xss_secure)
+
+    return FullTestResponse(
         id=created_test["id"],
         title=created_test["title"],
         description=created_test["description"],
-        questions=created_test["questions"],
+        questions=[
+            FullQuestionResponse(
+                id=question["id"],
+                title=question["title"],
+                user_id=question["user_id"],
+                answers=[
+                    FullAnswerInQuestionResponse(
+                        id=answer["id"],
+                        title=answer["title"],
+                        is_right=answer["is_right"],
+                        image_url=None if answer["filename"] is None else r2_client.generate_image_url(filename=f"answers/{answer["filename"]}")
+                    ) for answer in question["answers"]
+                ],
+                tests_count=question["test_count"],
+                status=question["status"],
+                image_url=None if question["filename"] is None else r2_client.generate_image_url(filename=f"questions/{question["filename"]}")
+            )
+            for question in created_test["questions"]
+        ],
         user_id=created_test["user_id"]
     )
 
@@ -41,7 +62,7 @@ async def create_test(
 async def get_all_tests_api(
     xss_secure: bool = True
 ):
-    tests = get_all_tests(xss_secure=xss_secure)
+    tests = await get_all_tests(xss_secure=xss_secure)
     return [
         TestResponse(
             id=test["id"],
@@ -52,7 +73,13 @@ async def get_all_tests_api(
                     id=question["id"],
                     title=question["title"],
                     user_id=question["user_id"],
-                    answers=question["answers"]
+                    answers=[
+                        AnswerInQuestionResponse(
+                            id=answer["id"],
+                            title=answer["title"],
+                            is_right=answer["is_right"],
+                        ) for answer in question["answers"]
+                    ]
                 )
                 for question in test["questions"]
             ],
@@ -69,24 +96,24 @@ async def delete_test_api(
 ):
     if current_user is None:
         raise HTTPException(status_code=403, detail="Not authenticated")
-    user_data = get_user_by_username(username=current_user.username)
+    user_data = await get_user_by_username(username=current_user.username)
     user_tests = user_data.get("tests", [])
 
     if any(test.get("id") == test_id for test in user_tests) or current_user.is_admin is True:
-        delete_test(test_id=test_id)
+        await delete_test(test_id=test_id)
         return Response(status_code=204)
 
     raise HTTPException(status_code=403, detail="You don't have permission to delete this question")
 
 
-@tests_router.get("/{test_id}", response_model=TestResponse)
+@tests_router.get("/{test_id}", response_model=FullTestResponse)
 async def get_test(
         test_id: int,
         xss_secure: bool = True
 ):
-    test = get_test_by_id(test_id=test_id, xss_secure=xss_secure)
+    test = await get_test_by_id(test_id=test_id, xss_secure=xss_secure)
 
-    return TestResponse(
+    return FullTestResponse(
         id=test["id"],
         title=test["title"],
         description=test["description"],
@@ -95,9 +122,17 @@ async def get_test(
                 id=question["id"],
                 title=question["title"],
                 user_id=question["user_id"],
-                answers=question["answers"],
+                answers=[
+                    FullAnswerInQuestionResponse(
+                        id=answer["id"],
+                        title=answer["title"],
+                        is_right=answer["is_right"],
+                        image_url=None if answer["filename"] is None else r2_client.generate_image_url(filename=f"answers/{answer["filename"]}")
+                    ) for answer in question["answers"]
+                ],
                 tests_count=question["test_count"],
-                status=question["status"]
+                status=question["status"],
+                image_url=None if question["filename"] is None else r2_client.generate_image_url(filename=f"questions/{question["filename"]}")
             )
             for question in test["questions"]
         ],

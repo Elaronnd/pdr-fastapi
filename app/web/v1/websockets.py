@@ -6,7 +6,7 @@ from fastapi import (
 )
 from app.config.config import FORBIDDEN_TAGS
 from app.schemas.pydantic_users import UserData
-from app.utils.jwt_user import get_current_user_ws
+from app.jwt.users import get_current_user_ws
 from html import escape
 
 websocket_router = APIRouter(prefix="/ws")

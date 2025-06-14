@@ -55,7 +55,9 @@ async def get_current_user(token: HTTPAuthorizationCredentials = Security(securi
             raise credentials_exception
     except InvalidTokenError:
         raise credentials_exception
-    user = get_user_by_username(username=username, xss_secure=False)
+
+    user = await get_user_by_username(username=username, xss_secure=False)
+
     return UserData(
         id=user["id"],
         username=user["username"],
@@ -66,7 +68,7 @@ async def get_current_user(token: HTTPAuthorizationCredentials = Security(securi
         is_admin=user["is_admin"]
     )
 
-def get_current_user_ws(
+async def get_current_user_ws(
     token: str = Header(title="JWT token", description="Your JWT token without \"Bearer\"")
 ) -> Optional[UserData]:
     credentials_exception = HTTPException(
@@ -81,7 +83,7 @@ def get_current_user_ws(
     except InvalidTokenError:
         raise credentials_exception
 
-    user = get_user_by_username(username=username)
+    user = await get_user_by_username(username=username)
 
     return UserData(
         id=user["id"],

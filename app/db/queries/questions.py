@@ -1,4 +1,8 @@
+from sqlalchemy import select
 from typing import Optional
+
+from sqlalchemy.orm import selectinload
+from app.db.queries.answers import delete_answer
 from app.db.base import Session
 from app.db.check_status import CheckStatus
 from app.exceptions import QuestionsError, QuestionError, UserIdError
@@ -9,63 +13,95 @@ from app.db.models import (
 )
 
 
-def create_question_with_answers(title: str, user_id: int, answers: list, status: CheckStatus, description: Optional[str] = None, xss_secure: bool = True):
-    with Session() as session:
-        user = session.query(Users).filter_by(id=user_id).one_or_none()
+async def create_question_with_answers(title: str, user_id: int, answers: list, status: CheckStatus, description: Optional[str] = None, xss_secure: bool = True):
+    async with Session() as session:
+        user = await session.execute(select(Users).where(Users.id == user_id))
+        user = user.scalar_one_or_none()
 
         if not user:
             raise UserIdError(message="User not found", user_id=user_id, status_code=404)
 
         question = Questions(title=title, description=description, user_id=user_id, status=status)
         session.add(question)
-        session.flush()
+        await session.flush()
 
         for answer in answers:
             answer_obj = Answers(
                 title=answer.title,
                 is_right=answer.is_right,
+                user_id=user_id,
                 question_id=question.id
             )
             session.add(answer_obj)
 
-        session.commit()
-        session.refresh(question)
+        await session.commit()
+
+        await session.refresh(question)
+
+        question = await session.execute(
+            select(Questions)
+            .options(
+                selectinload(Questions.answers),
+                selectinload(Questions.test_questions)
+            )
+            .where(Questions.id == question.id)
+        )
+        question = question.scalar_one()
 
         return question.to_dict(xss_secure=xss_secure)
 
 
-def delete_question(question_id: int):
-    with Session() as session:
-        question = session.query(Questions).filter_by(id=question_id).one_or_none()
+async def delete_question(question_id: int):
+    async with Session() as session:
+        question = await session.execute(
+            select(Questions)
+            .options(selectinload(Questions.answers))
+            .where(Questions.id == question_id)
+        )
+        question = question.scalar_one_or_none()
+
+        for answer in question.answers:
+            await delete_answer(answer_id=answer.id)
 
         if not question:
             raise QuestionError(message="question not found", status_code=404, question_id=question_id)
 
-        session.delete(question)
-        session.commit()
+        await session.delete(question)
+        await session.commit()
 
 
-def edit_status_question(question_id: int, status: CheckStatus, xss_secure: bool = True):
-    with Session() as session:
-        question = session.query(Questions).filter_by(id=question_id).one_or_none()
+async def edit_status_question(question_id: int, status: CheckStatus, xss_secure: bool = True):
+    async with Session() as session:
+        question = await session.execute(
+            select(Questions)
+            .options(
+                selectinload(Questions.answers),
+                selectinload(Questions.test_questions)
+            )
+            .where(Questions.id == question_id)
+        )
+        question = question.scalar_one_or_none()
 
         if not question:
             raise QuestionError(message="question not found", status_code=404, question_id=question_id)
 
         question.status = status
 
-        session.commit()
-        session.refresh(question)
+        await session.commit()
+        await session.refresh(question)
 
         return question.to_dict(xss_secure=xss_secure)
 
 
-def get_all_questions(status: Optional[CheckStatus] = None, xss_secure: bool = True):
-    with Session() as session:
+async def get_all_questions(status: Optional[CheckStatus] = None, xss_secure: bool = True):
+    async with Session() as session:
         if status is None:
-            questions = session.query(Questions).all()
+            request = select(Questions)
         else:
-            questions = session.query(Questions).filter_by(status=status).all()
+            request = select(Questions).where(Questions.status == status)
+
+        questions = await session.execute(request)
+        questions = questions.scalars().all()
 
         if not questions:
             raise QuestionsError(message="questions not found", status_code=404)
@@ -73,11 +109,74 @@ def get_all_questions(status: Optional[CheckStatus] = None, xss_secure: bool = T
         return [question.to_dict(xss_secure=xss_secure) for question in questions]
 
 
-def get_question_by_id(question_id: int, xss_secure: bool = True):
-    with Session() as session:
-        question = session.query(Questions).filter_by(id=question_id).one_or_none()
+async def get_question_by_id(question_id: int, xss_secure: bool = True):
+    async with Session() as session:
+        question = await session.execute(
+            select(Questions)
+            .options(
+                selectinload(Questions.answers),
+                selectinload(Questions.test_questions)
+            )
+            .where(Questions.id == question_id)
+        )
+        question = question.scalar_one_or_none()
 
         if not question:
             raise QuestionError(message="question not found", status_code=404, question_id=question_id)
+
+        return question.to_dict(xss_secure=xss_secure)
+
+
+
+async def is_owner_user(
+    question_id: int,
+    user_id: int
+) -> bool:
+    async with Session() as session:
+        question = await session.execute(select(Questions).where(Questions.id == question_id))
+        question = question.scalar_one_or_none()
+
+        if not question:
+            raise QuestionError(message="answer not found", status_code=404, question_id=question_id)
+        elif question.user_id != user_id:
+            return False
+        return True
+
+
+async def edit_question(
+        question_id: int,
+        status: CheckStatus = None,
+        title: str = None,
+        description: str = None,
+        filename: str = None,
+        xss_secure: bool = True
+):
+    async with Session() as session:
+        question = await session.execute(
+            select(Questions)
+            .where(Questions.id == question_id)
+            .options(
+                selectinload(Questions.answers),
+                selectinload(Questions.test_questions)
+            )
+        )
+        question = question.scalar_one_or_none()
+
+        if not question:
+            raise QuestionError(message="answer not found", status_code=404, question_id=question_id)
+        elif title is not None:
+            question.title = title
+
+        if filename is not None:
+            question.filename = filename
+
+        if description is not None:
+            question.description = description
+
+        if status is not None:
+            question.status = status
+
+        await session.commit()
+        await session.refresh(question)
 
         return question.to_dict(xss_secure=xss_secure)

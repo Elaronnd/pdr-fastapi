@@ -15,7 +15,10 @@ class Tests(Base):
     title: Mapped[str] = mapped_column(nullable=False)
     description: Mapped[str] = mapped_column(nullable=True)
 
-    test_questions: Mapped[list['QuestionsToTests']] = relationship(back_populates='tests')
+    test_questions: Mapped[list['QuestionsToTests']] = relationship(
+        back_populates='tests',
+        cascade="all, delete"
+    )
     questions: Mapped[list['Questions']] = relationship(
         'Questions',
         secondary='questions_to_tests',

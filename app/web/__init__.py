@@ -8,7 +8,9 @@ from app.exceptions import (
     QuestionsError,
     QuestionsListError,
     TestError,
-    TestsError
+    TestsError,
+    AnswerIdError,
+    AnswerImageError
 )
 
 
@@ -88,5 +90,26 @@ async def tests_error_handler(request: Request, exception: TestsError):
         status_code=exception.status_code,
         content={
             "detail": exception.message
+        },
+    )
+
+@app.exception_handler(AnswerIdError)
+async def answer_id_error_handler(request: Request, exception: AnswerIdError):
+    return JSONResponse(
+        status_code=exception.status_code,
+        content={
+            "detail": exception.message,
+            "answer_id": exception.answer_id
+        },
+    )
+
+
+@app.exception_handler(AnswerImageError)
+async def answer_image_error_handler(request: Request, exception: AnswerImageError):
+    return JSONResponse(
+        status_code=exception.status_code,
+        content={
+            "detail": exception.message,
+            "filename": exception.filename
         },
     )
